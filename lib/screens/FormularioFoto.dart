@@ -46,17 +46,14 @@ class _FormularioFotoState extends State<FormularioFoto> {
   @override
   void initState() {
     super.initState();
-    {
-      numeroController.addListener(() {
-        if (_debounce?.isActive ?? false) _debounce!.cancel();
-        _debounce = Timer(const Duration(milliseconds: 900), () {
-          if (mounted) {
-            _buscarMaquina(context);
-          }
-        });
+    numeroController.addListener(() {
+      if (_debounce?.isActive ?? false) _debounce!.cancel();
+      _debounce = Timer(const Duration(milliseconds: 900), () {
+        if (mounted) {
+          _buscarMaquina(context);
+        }
       });
-    }
-    ;
+    });
   }
 
   @override
@@ -76,8 +73,7 @@ class _FormularioFotoState extends State<FormularioFoto> {
     final numero = int.tryParse(numeroController.text);
     if (numero != null) {
       final db = await getDb();
-      final result =
-          await db.query('maquina', where: 'numero = ?', whereArgs: [numero]);
+      final result = await db.query('maquina', where: 'numero = ?', whereArgs: [numero]);
 
       if (result.isNotEmpty) {
         final data = result.first;
@@ -113,6 +109,103 @@ class _FormularioFotoState extends State<FormularioFoto> {
         );
       }
     }
+  }
+
+  Widget _buildResultadoCalculos() {
+    final rel1 = int.tryParse(relogio1Controller.text) ?? 0;
+    final rel2 = int.tryParse(relogio2Controller.text) ?? 0;
+    final saida = int.tryParse(saidaController.text) ?? 0;
+    final saidaAnt = saidaAntiga ?? 0;
+    final pelucia = valorPeluciaAntigo ?? 1.0;
+
+    final diferenca1 = relogio1Antigo != null ? rel1 - relogio1Antigo! : 0;
+    final diferenca2 = relogio2Antigo != null ? rel2 - relogio2Antigo! : 0;
+    final totalEntrada = diferenca1 + diferenca2;
+    final diferencaSaida = saida - saidaAnt;
+    final jogadasPorPelucia = diferencaSaida > 0 ? (totalEntrada / diferencaSaida).toStringAsFixed(2) : '0';
+    final mediaSaida = diferencaSaida > 0 ? ((totalEntrada * pelucia) / diferencaSaida).toStringAsFixed(2) : '0';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Soma das diferenças dos relógios de entrada: $totalEntrada', style: TextStyle(color: Colors.white)),
+        SizedBox(height: 5),
+        Text('Jogadas por pelúcia: $jogadasPorPelucia', style: TextStyle(color: Colors.white)),
+        SizedBox(height: 5),
+        Text('Média de saída: $mediaSaida', style: TextStyle(color: Colors.white)),
+        SizedBox(height: 20),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: utils.appBarPadraoCpl(context, 'Foto tirada'),
+      body: Container(
+        padding: EdgeInsets.symmetric(horizontal: 40.0),
+        color: utils.cplColorBlue,
+        child: Form(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Image.file(File(widget.imagePath), width: 200),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VisualizarFoto(imagePath: widget.imagePath),
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.zoom_in, color: utils.cplColor, size: 30),
+                  ),
+                  _buildCampoComTitulo(titulo: 'Número', valorAntigo: null, controller: numeroController, hintText: 'Digite o número'),
+                  _buildCampoComTitulo(titulo: 'Reposição', valorAntigo: null, controller: reposicaoController, hintText: 'Digite a reposição'),
+                  _buildCampoComTitulo(titulo: 'Relógio Entrada 1', valorAntigo: relogio1Antigo?.toString(), controller: relogio1Controller, hintText: 'Entrada 1'),
+                  _buildCampoComTitulo(titulo: 'Relógio Entrada 2', valorAntigo: relogio2Antigo?.toString(), controller: relogio2Controller, hintText: 'Entrada 2'),
+                  _buildCampoComTitulo(titulo: 'Relógio Saída', valorAntigo: saidaAntiga?.toString(), controller: saidaController, hintText: 'Saída'),
+                  _buildCampoComTitulo(titulo: 'Valor Teste', valorAntigo: valorJogadaAntigo?.toString(), controller: valortesteController, hintText: 'Valor de teste'),
+                  _buildCampoComTitulo(titulo: 'Qtd Produtos', valorAntigo: quantidadeEquipamentoController.text, controller: quantidadeEquipamentoController, hintText: 'Qtd produtos'),
+
+                  // CÁLCULOS EXTRAS AQUI 👇
+                  _buildResultadoCalculos(),
+
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(primary: utils.cplColorGrey),
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      _validarCampos(context);
+                      utils.dialogPadraoCpl(
+                        context,
+                        titulo: 'Atenção',
+                        conteudo: 'Tem certeza que deseja gravar a foto?',
+                        textoSim: 'Sim',
+                        acaoSim: () {
+                          // salvar lógica aqui
+                        },
+                        textoNao: 'Não',
+                        acaoNao: () {},
+                      );
+                    },
+                    child: Text('Salvar', style: TextStyle(color: utils.cplColor, fontSize: 20)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _validarCampos(BuildContext context) {
@@ -169,8 +262,7 @@ class _FormularioFotoState extends State<FormularioFoto> {
           children: [
             Text(
               titulo,
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
             if (valorAntigo != null)
               Text(
@@ -185,10 +277,8 @@ class _FormularioFotoState extends State<FormularioFoto> {
           keyboardType: TextInputType.number,
           style: TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            focusedBorder:
-                OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-            enabledBorder:
-                OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
             hintText: hintText,
             hintStyle: TextStyle(color: Colors.grey),
             prefixIcon: Icon(Icons.keyboard, color: Colors.white),
@@ -200,110 +290,11 @@ class _FormularioFotoState extends State<FormularioFoto> {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Diferença: $diferenca',
-              style:
-                  TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
             ),
           ),
         SizedBox(height: 20),
       ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: utils.appBarPadraoCpl(context, 'Foto tirada'),
-      body: Container(
-        padding: EdgeInsets.symmetric(horizontal: 40.0),
-        color: utils.cplColorBlue,
-        child: Form(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Image.file(File(widget.imagePath), width: 200),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      primary: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              VisualizarFoto(imagePath: widget.imagePath),
-                        ),
-                      );
-                    },
-                    child: Icon(Icons.zoom_in, color: utils.cplColor, size: 30),
-                  ),
-                  _buildCampoComTitulo(
-                      titulo: 'Número',
-                      valorAntigo: null,
-                      controller: numeroController,
-                      hintText: 'Digite o número'),
-                  _buildCampoComTitulo(
-                      titulo: 'Reposição',
-                      valorAntigo: null,
-                      controller: reposicaoController,
-                      hintText: 'Digite a reposição'),
-                  _buildCampoComTitulo(
-                      titulo: 'Relógio Entrada 1',
-                      valorAntigo: relogio1Antigo?.toString(),
-                      controller: relogio1Controller,
-                      hintText: 'Entrada 1'),
-                  _buildCampoComTitulo(
-                      titulo: 'Relógio Entrada 2',
-                      valorAntigo: relogio2Antigo?.toString(),
-                      controller: relogio2Controller,
-                      hintText: 'Entrada 2'),
-                  _buildCampoComTitulo(
-                      titulo: 'Relógio Saída',
-                      valorAntigo: saidaAntiga?.toString(),
-                      controller: saidaController,
-                      hintText: 'Saída'),
-                  _buildCampoComTitulo(
-                      titulo: 'Valor Teste',
-                      valorAntigo: valorJogadaAntigo?.toString(),
-                      controller: valortesteController,
-                      hintText: 'Valor de teste'),
-                  _buildCampoComTitulo(
-                      titulo: 'Qtd Produtos',
-                      valorAntigo: quantidadeEquipamentoController.text,
-                      controller: quantidadeEquipamentoController,
-                      hintText: 'Qtd produtos'),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    style:
-                        ElevatedButton.styleFrom(primary: utils.cplColorGrey),
-                    onPressed: () {
-                      FocusScope.of(context).unfocus();
-                      _validarCampos(context);
-                      utils.dialogPadraoCpl(
-                        context,
-                        titulo: 'Atenção',
-                        conteudo: 'Tem certeza que deseja gravar a foto?',
-                        textoSim: 'Sim',
-                        acaoSim: () {
-                          // lógica de salvar vai aqui
-                          
-                        },
-                        textoNao: 'Não',
-                        acaoNao: () {},
-                      );
-                    },
-                    child: Text('Salvar',
-                        style: TextStyle(color: utils.cplColor, fontSize: 20)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
