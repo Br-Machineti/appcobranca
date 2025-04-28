@@ -22,7 +22,7 @@ class TelaInicial extends StatelessWidget {
       home: Scaffold(
         appBar: utils.appBarPadraoCpl(
           context,
-          'Cobrança (V:1.7)',
+          'Cobrança (V:1.8)',
           actions: <Widget>[
             Container(
               padding: const EdgeInsets.only(right: 10.0),

@@ -54,7 +54,7 @@ Future<Database> getDb() async {
         )''',
       );
     },
-    version: 1,
+    version: 2,
   );
   return await database;
 }

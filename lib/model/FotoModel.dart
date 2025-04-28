@@ -95,7 +95,7 @@ class FotoModel {
   }
 
   /// insere a foto passado como parametro
-  void inserirFoto(Database db, Foto foto) async {
+Future<void> inserirFoto(Database db, Foto foto) async {
     await db.rawInsert(
       'INSERT INTO foto (reposicao, numero, dataf, latitude, longitude, urlPath, relogio1, relogio2, saida, enviado, valorteste, quantidade_equipamento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [

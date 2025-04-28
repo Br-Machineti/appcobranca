@@ -1,14 +1,16 @@
-// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
-
 import 'dart:async';
 import 'dart:io';
 import 'package:droid_foto/Utils.dart' as utils;
+import 'package:droid_foto/classes/Foto.dart';
 import 'package:droid_foto/model/FotoModel.dart';
 import 'package:droid_foto/model/db.dart';
-import 'package:droid_foto/classes/Foto.dart';
 import 'package:droid_foto/screens/VisualizarFoto.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:sqflite/sqflite.dart';
 import 'package:flutter/scheduler.dart';
 
 class FormularioFoto extends StatefulWidget {
@@ -43,18 +45,19 @@ class _FormularioFotoState extends State<FormularioFoto> {
 
   Timer? _debounce;
 
-  @override
-  void initState() {
-    super.initState();
-    numeroController.addListener(() {
-      if (_debounce?.isActive ?? false) _debounce!.cancel();
-      _debounce = Timer(const Duration(milliseconds: 900), () {
-        if (mounted) {
-          _buscarMaquina(context);
-        }
-      });
+
+@override
+void initState() {
+  super.initState();
+  numeroController.addListener(() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) {
+        _buscarMaquina(this.context);
+      }
     });
-  }
+  });
+}
 
   @override
   void dispose() {
@@ -69,49 +72,94 @@ class _FormularioFotoState extends State<FormularioFoto> {
     super.dispose();
   }
 
-  void _buscarMaquina(BuildContext context) async {
-    final numero = int.tryParse(numeroController.text);
-    if (numero != null) {
-      final db = await getDb();
-      final result = await db.query('maquina', where: 'numero = ?', whereArgs: [numero]);
+  Future<Position> _determinePosition(BuildContext context) async {
+    bool serviceEnabled;
+    LocationPermission permission;
 
-      if (result.isNotEmpty) {
-        final data = result.first;
-        setState(() {
-          relogio1Antigo = data['relogio1atual'] as int?;
-          relogio2Antigo = data['relogio2atual'] as int?;
-          saidaAntiga = data['relogiosaidaatual'] as int?;
-          valorJogadaAntigo = (data['valorjogada'] as num?)?.toDouble();
-          valorPeluciaAntigo = (data['valorpelucia'] as num?)?.toDouble();
-          mensagemAntiga = data['mensagem'] as String?;
-        });
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      utils.dialogPadraoCpl(
+        context,
+        titulo: 'Atenção',
+        conteudo: 'Ative a localização do seu celular.',
+        textoSim: 'Ok',
+        acaoSim: () {},
+        textoNao: '',
+        acaoNao: () {},
+      );
+      return Future.error('Localização desativada. Ative-a nas configurações.');
+    }
 
-        if (mensagemAntiga != null && mensagemAntiga!.isNotEmpty) {
-          utils.dialogPadraoCpl(
-            context,
-            titulo: 'Mensagem da Máquina',
-            conteudo: mensagemAntiga!,
-            textoSim: 'Ok',
-            acaoSim: () {},
-            textoNao: '',
-            acaoNao: () {},
-          );
-        }
-      } else {
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
         utils.dialogPadraoCpl(
           context,
           titulo: 'Atenção',
-          conteudo: 'Máquina não cadastrada. Deseja continuar?',
-          textoSim: 'Sim',
+          conteudo: 'É necessária a localização para salvar a foto.',
+          textoSim: 'Ok',
           acaoSim: () {},
-          textoNao: 'Não',
+          textoNao: '',
           acaoNao: () {},
         );
+        return Future.error('Location permissions are denied');
       }
     }
+
+    if (permission == LocationPermission.deniedForever) {
+      utils.dialogPadraoCpl(
+        context,
+        titulo: 'Atenção',
+        conteudo:
+            'As permissões de localização foram negadas permanentemente. Altere-as nas configurações do celular.',
+        textoSim: 'Ok',
+        acaoSim: () {},
+        textoNao: '',
+        acaoNao: () {},
+      );
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+
+    return await Geolocator.getCurrentPosition();
   }
 
-  Widget _buildResultadoCalculos() {
+void _buscarMaquina(BuildContext context) async {
+  final numero = int.tryParse(numeroController.text);
+  if (numero != null) {
+    final db = await getDb();
+    final result = await db.query('maquina', where: 'numero = ?', whereArgs: [numero]);
+
+    if (result.isNotEmpty) {
+      final data = result.first;
+      setState(() {
+        relogio1Antigo = data['relogio1atual'] as int?;
+        relogio2Antigo = data['relogio2atual'] as int?;
+        saidaAntiga = data['relogiosaidaatual'] as int?;
+        valorJogadaAntigo = (data['valorjogada'] as num?)?.toDouble();
+        valorPeluciaAntigo = (data['valorpelucia'] as num?)?.toDouble();
+        mensagemAntiga = data['mensagem'] as String?;
+      });
+
+      if (mensagemAntiga != null && mensagemAntiga!.isNotEmpty) {
+        _exibirDialogo(
+          context: context,
+          titulo: 'Mensagem da Máquina',
+          conteudo: mensagemAntiga!,
+        );
+      }
+    } else {
+      _exibirDialogo(
+        context: context,
+        titulo: 'Atenção',
+        conteudo: 'Máquina não cadastrada. Deseja continuar?',
+      );
+    }
+  }
+}
+
+Widget _buildResultadoCalculos() {
     final rel1 = int.tryParse(relogio1Controller.text) ?? 0;
     final rel2 = int.tryParse(relogio2Controller.text) ?? 0;
     final saida = int.tryParse(saidaController.text) ?? 0;
@@ -122,122 +170,219 @@ class _FormularioFotoState extends State<FormularioFoto> {
     final diferenca2 = relogio2Antigo != null ? rel2 - relogio2Antigo! : 0;
     final totalEntrada = diferenca1 + diferenca2;
     final diferencaSaida = saida - saidaAnt;
-    final jogadasPorPelucia = diferencaSaida > 0 ? (totalEntrada / diferencaSaida).toStringAsFixed(2) : '0';
-    final mediaSaida = diferencaSaida > 0 ? ((totalEntrada * pelucia) / diferencaSaida).toStringAsFixed(2) : '0';
+    final jogadasPorPelucia = diferencaSaida > 0
+        ? (totalEntrada / diferencaSaida).toStringAsFixed(2)
+        : '0';
+    final mediaSaida = diferencaSaida > 0
+        ? ((totalEntrada * pelucia) / diferencaSaida).toStringAsFixed(2)
+        : '0';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Soma das diferenças dos relógios de entrada: $totalEntrada', style: TextStyle(color: Colors.white)),
+        Text('Soma das diferenças dos relógios de entrada: $totalEntrada',
+            style: TextStyle(color: Colors.white)),
         SizedBox(height: 5),
-        Text('Jogadas por pelúcia: $jogadasPorPelucia', style: TextStyle(color: Colors.white)),
+        Text('Jogadas por pelúcia: $jogadasPorPelucia',
+            style: TextStyle(color: Colors.white)),
         SizedBox(height: 5),
-        Text('Média de saída: $mediaSaida', style: TextStyle(color: Colors.white)),
+        Text('Média de saída: $mediaSaida',
+            style: TextStyle(color: Colors.white)),
         SizedBox(height: 20),
       ],
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: utils.appBarPadraoCpl(context, 'Foto tirada'),
-      body: Container(
-        padding: EdgeInsets.symmetric(horizontal: 40.0),
-        color: utils.cplColorBlue,
-        child: Form(
-          child: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Image.file(File(widget.imagePath), width: 200),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      primary: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => VisualizarFoto(imagePath: widget.imagePath),
-                        ),
-                      );
-                    },
-                    child: Icon(Icons.zoom_in, color: utils.cplColor, size: 30),
-                  ),
-                  _buildCampoComTitulo(titulo: 'Número', valorAntigo: null, controller: numeroController, hintText: 'Digite o número'),
-                  _buildCampoComTitulo(titulo: 'Reposição', valorAntigo: null, controller: reposicaoController, hintText: 'Digite a reposição'),
-                  _buildCampoComTitulo(titulo: 'Relógio Entrada 1', valorAntigo: relogio1Antigo?.toString(), controller: relogio1Controller, hintText: 'Entrada 1'),
-                  _buildCampoComTitulo(titulo: 'Relógio Entrada 2', valorAntigo: relogio2Antigo?.toString(), controller: relogio2Controller, hintText: 'Entrada 2'),
-                  _buildCampoComTitulo(titulo: 'Relógio Saída', valorAntigo: saidaAntiga?.toString(), controller: saidaController, hintText: 'Saída'),
-                  _buildCampoComTitulo(titulo: 'Valor Teste', valorAntigo: valorJogadaAntigo?.toString(), controller: valortesteController, hintText: 'Valor de teste'),
-                  _buildCampoComTitulo(titulo: 'Qtd Produtos', valorAntigo: quantidadeEquipamentoController.text, controller: quantidadeEquipamentoController, hintText: 'Qtd produtos'),
 
-                  // CÁLCULOS EXTRAS AQUI 👇
-                  _buildResultadoCalculos(),
 
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(primary: utils.cplColorGrey),
-                    onPressed: () {
-                      FocusScope.of(context).unfocus();
-                      _validarCampos(context);
-                      utils.dialogPadraoCpl(
-                        context,
-                        titulo: 'Atenção',
-                        conteudo: 'Tem certeza que deseja gravar a foto?',
-                        textoSim: 'Sim',
-                        acaoSim: () {
-                          // salvar lógica aqui
-                        },
-                        textoNao: 'Não',
-                        acaoNao: () {},
-                      );
-                    },
-                    child: Text('Salvar', style: TextStyle(color: utils.cplColor, fontSize: 20)),
-                  ),
-                ],
-              ),
-            ),
+void _exibirDialogo({
+  required BuildContext context,
+  required String titulo,
+  required String conteudo,
+}) {
+  if (!mounted) return;
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(titulo),
+        content: Text(conteudo),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Ok'),
           ),
-        ),
-      ),
+        ],
+      );
+    },
+  );
+}
+
+  void saveFoto(BuildContext context) async {
+    //Exibe o dialog de carregamento
+    utils.showLoaderDialog(context, texto: 'Enviando foto(s)...');
+
+    if (reposicaoController.text.isEmpty || numeroController.text.isEmpty) {
+      Navigator.of(context, rootNavigator: true).pop();
+      utils.dialogPadraoCpl(
+        context,
+        titulo: 'Atenção',
+        conteudo: 'Reposição e número são obrigatórios.',
+        textoSim: 'Ok',
+        acaoSim: () {},
+        textoNao: '',
+        acaoNao: () {},
+      );
+      return;
+    }
+   //obtem os valores dos campos
+    final int reposicao = int.parse(reposicaoController.text);
+    final int numero = int.parse(numeroController.text);
+    final int relogio1 = int.tryParse(relogio1Controller.text) ?? 0;
+    final int relogio2 = int.tryParse(relogio2Controller.text) ?? 0;
+    final int saida = int.tryParse(saidaController.text) ?? 0;
+    final int valorteste = int.tryParse(valortesteController.text) ?? 0;
+    final int quantidadeEquipamento =
+        int.tryParse(quantidadeEquipamentoController.text) ?? 0;
+
+    final String imagePath = widget.imagePath;
+    DateTime dataAtual = DateTime.now();
+    String dataFormatada = dataAtual.toString().split('.')[0];
+    Position position = await _determinePosition(context);
+
+    //copia a imagem para o diretório de documentos do aplicativo
+    final String path =
+        (await path_provider.getApplicationDocumentsDirectory()).path;
+    Directory(path + '/images/').createSync();
+    final String fileName = basename(File(imagePath).path);
+    final File newImage = await File(imagePath).copy('$path/images/$fileName');
+
+//Cria o objeto Foto com os dados obtidos
+    Foto foto = Foto(
+      id: 0,
+      reposicao: reposicao,
+      numero: numero,
+      dataf: dataFormatada,
+      urlPath: newImage.path,
+      latitude: position.latitude.toString(),
+      longitude: position.longitude.toString(),
+      relogio1: relogio1,
+      relogio2: relogio2,
+      saida: saida,
+      enviado: 0,
+      valorteste: valorteste,
+      quantidade_equipamento: quantidadeEquipamento,
+    );
+
+    //Salva a foto no banco de dados
+    Database db = await getDb();
+    FotoModel fotoModel = FotoModel();
+    await fotoModel.inserirFoto(db, foto);
+
+    Navigator.of(context, rootNavigator: true).pop();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => VisualizarFoto(imagePath: imagePath)),
+      (Route<dynamic> route) => false,
     );
   }
 
-  void _validarCampos(BuildContext context) {
-    final relogio1Atual = int.tryParse(relogio1Controller.text) ?? 0;
-    final relogio2Atual = int.tryParse(relogio2Controller.text) ?? 0;
+// Tenta enviar a foto para a API
 
-    if (relogio1Antigo != null && relogio1Atual <= relogio1Antigo!) {
-      utils.dialogPadraoCpl(
-        context,
-        titulo: 'Erro',
-        conteudo: 'O valor do Relógio Entrada 1 deve ser maior que o anterior.',
-        textoSim: 'Ok',
-        acaoSim: () {},
-        textoNao: '',
-        acaoNao: () {},
-      );
-      return;
-    }
-
-    if (relogio2Antigo != null && relogio2Atual <= relogio2Antigo!) {
-      utils.dialogPadraoCpl(
-        context,
-        titulo: 'Erro',
-        conteudo: 'O valor do Relógio Entrada 2 deve ser maior que o anterior.',
-        textoSim: 'Ok',
-        acaoSim: () {},
-        textoNao: '',
-        acaoNao: () {},
-      );
-      return;
-    }
-  }
+//Acho que tem que ser aqui o _buildResultadoCalculos, mas não sei onde
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: utils.appBarPadraoCpl(context, 'Foto tirada'),
+    body: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 40.0),
+      color: utils.cplColorBlue,
+      child: Form(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Image.file(File(widget.imagePath), width: 200),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          VisualizarFoto(imagePath: widget.imagePath),
+                    ),
+                  );
+                },
+                child: Icon(Icons.zoom_in, color: utils.cplColor, size: 30),
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Número',
+                valorAntigo: null,
+                controller: numeroController,
+                hintText: 'Digite o número',
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Reposição',
+                valorAntigo: null,
+                controller: reposicaoController,
+                hintText: 'Digite a reposição',
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Relógio Entrada 1',
+                valorAntigo: relogio1Antigo?.toString(),
+                controller: relogio1Controller,
+                hintText: 'Entrada 1',
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Relógio Entrada 2',
+                valorAntigo: relogio2Antigo?.toString(),
+                controller: relogio2Controller,
+                hintText: 'Entrada 2',
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Relógio Saída',
+                valorAntigo: saidaAntiga?.toString(),
+                controller: saidaController,
+                hintText: 'Saída',
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Valor Teste',
+                valorAntigo: valorJogadaAntigo?.toString(),
+                controller: valortesteController,
+                hintText: 'Valor de teste',
+              ),
+              _buildCampoComTitulo(
+                titulo: 'Qtd Produtos',
+                valorAntigo: quantidadeEquipamentoController.text,
+                controller: quantidadeEquipamentoController,
+                hintText: 'Qtd produtos',
+              ),
+              _buildResultadoCalculos(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(primary: utils.cplColorGrey),
+                onPressed: () {
+                  FocusScope.of(context).unfocus();
+                  saveFoto(context);
+                },
+                child: Text(
+                  'Salvar',
+                  style: TextStyle(color: utils.cplColor, fontSize: 20),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildCampoComTitulo({
     required String titulo,
@@ -277,8 +422,10 @@ class _FormularioFotoState extends State<FormularioFoto> {
           keyboardType: TextInputType.number,
           style: TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+            focusedBorder:
+                OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+            enabledBorder:
+                OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
             hintText: hintText,
             hintStyle: TextStyle(color: Colors.grey),
             prefixIcon: Icon(Icons.keyboard, color: Colors.white),
