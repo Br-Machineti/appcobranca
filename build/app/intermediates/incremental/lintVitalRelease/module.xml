@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="C:\flutter\examples\appfoto\droid_foto\droid_fotobase2\android\app"
+    name=":app"
+    type="APP"
+    maven="android:app:"
+    gradle="7.0.2"
+    buildFolder="C:\flutter\examples\appfoto\droid_foto\droid_fotobase2\build\app"
+    bootClassPath="C:\Users\Lukas\AppData\Local\Android\sdk\platforms\android-31\android.jar;C:\Users\Lukas\AppData\Local\Android\sdk\build-tools\30.0.2\core-lambda-stubs.jar"
+    javaSourceLevel="1.8"
+    compileTarget="android-31">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>

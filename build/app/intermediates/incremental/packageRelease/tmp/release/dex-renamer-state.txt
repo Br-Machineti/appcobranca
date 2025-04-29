@@ -1,0 +1,4 @@
+#Mon Apr 28 15:41:29 BRT 2025
+base.0=C\:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\app\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

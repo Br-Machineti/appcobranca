@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\geolocator_android\\intermediates\\merged_res\\release\\drawable-xxhdpi-v4\\googleg_disabled_color_18.png",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\b5d406235c1c0e17d8e3c7dbbb4f80e7\\transformed\\jetified-play-services-base-17.0.0\\res\\drawable-xxhdpi-v4\\googleg_disabled_color_18.png"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\geolocator_android\\intermediates\\merged_res\\release\\drawable-xxhdpi-v4\\googleg_standard_color_18.png",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\b5d406235c1c0e17d8e3c7dbbb4f80e7\\transformed\\jetified-play-services-base-17.0.0\\res\\drawable-xxhdpi-v4\\googleg_standard_color_18.png"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\geolocator_android\\intermediates\\merged_res\\release\\drawable-xxhdpi-v4\\common_google_signin_btn_icon_dark_normal_background.9.png",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\b5d406235c1c0e17d8e3c7dbbb4f80e7\\transformed\\jetified-play-services-base-17.0.0\\res\\drawable-xxhdpi-v4\\common_google_signin_btn_icon_dark_normal_background.9.png"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\geolocator_android\\intermediates\\merged_res\\release\\drawable-xxhdpi-v4\\common_google_signin_btn_text_dark_normal_background.9.png",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\b5d406235c1c0e17d8e3c7dbbb4f80e7\\transformed\\jetified-play-services-base-17.0.0\\res\\drawable-xxhdpi-v4\\common_google_signin_btn_text_dark_normal_background.9.png"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\geolocator_android\\intermediates\\merged_res\\release\\drawable-xxhdpi-v4\\common_google_signin_btn_text_light_normal_background.9.png",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\b5d406235c1c0e17d8e3c7dbbb4f80e7\\transformed\\jetified-play-services-base-17.0.0\\res\\drawable-xxhdpi-v4\\common_google_signin_btn_text_light_normal_background.9.png"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\geolocator_android\\intermediates\\merged_res\\release\\drawable-xxhdpi-v4\\common_google_signin_btn_icon_light_normal_background.9.png",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\b5d406235c1c0e17d8e3c7dbbb4f80e7\\transformed\\jetified-play-services-base-17.0.0\\res\\drawable-xxhdpi-v4\\common_google_signin_btn_icon_light_normal_background.9.png"
+    }
+]

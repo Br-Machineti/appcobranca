@@ -12,6 +12,8 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:droid_foto/screens/ListaFoto.dart';
+import 'package:droid_foto/screens/TelaInicial.dart';
 
 class FormularioFoto extends StatefulWidget {
   final String imagePath;
@@ -221,23 +223,25 @@ void _exibirDialogo({
 }
 
   void saveFoto(BuildContext context) async {
-    //Exibe o dialog de carregamento
-    utils.showLoaderDialog(context, texto: 'Enviando foto(s)...');
+  // Exibe o diálogo de carregamento
+  utils.showLoaderDialog(context, texto: 'Salvando e enviando foto(s)...');
 
-    if (reposicaoController.text.isEmpty || numeroController.text.isEmpty) {
-      Navigator.of(context, rootNavigator: true).pop();
-      utils.dialogPadraoCpl(
-        context,
-        titulo: 'Atenção',
-        conteudo: 'Reposição e número são obrigatórios.',
-        textoSim: 'Ok',
-        acaoSim: () {},
-        textoNao: '',
-        acaoNao: () {},
-      );
-      return;
-    }
-   //obtem os valores dos campos
+  if (reposicaoController.text.isEmpty || numeroController.text.isEmpty) {
+    Navigator.of(context, rootNavigator: true).pop();
+    utils.dialogPadraoCpl(
+      context,
+      titulo: 'Atenção',
+      conteudo: 'Reposição e número são obrigatórios.',
+      textoSim: 'Ok',
+      acaoSim: () {},
+      textoNao: '',
+      acaoNao: () {},
+    );
+    return;
+  }
+
+  try {
+    // Obtém os dados dos campos
     final int reposicao = int.parse(reposicaoController.text);
     final int numero = int.parse(numeroController.text);
     final int relogio1 = int.tryParse(relogio1Controller.text) ?? 0;
@@ -252,14 +256,14 @@ void _exibirDialogo({
     String dataFormatada = dataAtual.toString().split('.')[0];
     Position position = await _determinePosition(context);
 
-    //copia a imagem para o diretório de documentos do aplicativo
+    // Copia a imagem para o diretório de armazenamento
     final String path =
         (await path_provider.getApplicationDocumentsDirectory()).path;
     Directory(path + '/images/').createSync();
     final String fileName = basename(File(imagePath).path);
     final File newImage = await File(imagePath).copy('$path/images/$fileName');
 
-//Cria o objeto Foto com os dados obtidos
+    // Cria o objeto Foto
     Foto foto = Foto(
       id: 0,
       reposicao: reposicao,
@@ -276,21 +280,54 @@ void _exibirDialogo({
       quantidade_equipamento: quantidadeEquipamento,
     );
 
-    //Salva a foto no banco de dados
+    // Salva a foto no banco de dados
     Database db = await getDb();
     FotoModel fotoModel = FotoModel();
     await fotoModel.inserirFoto(db, foto);
 
+    // Tenta enviar a foto para a API
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        List<Foto> listaFotos = await fotoModel.todasFotosPendentes(db);
+        await utils.enviarFotos(context, listaFotos, fotoModel, db);
+      }
+    } on SocketException catch (_) {
+      // Caso não tenha conexão, exibe um aviso
+      utils.dialogPadraoCpl(
+        context,
+        titulo: 'Atenção',
+        conteudo: 'Não foi possível conectar-se ao servidor. A foto será enviada posteriormente.',
+        textoSim: 'Ok',
+        acaoSim: () {},
+        textoNao: '',
+        acaoNao: () {},
+      );
+    }
+
+    // Fecha o diálogo de carregamento
     Navigator.of(context, rootNavigator: true).pop();
+
+    // Redireciona para a tela de lista de fotos
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => VisualizarFoto(imagePath: imagePath)),
+      MaterialPageRoute(builder: (context) => TelaInicial()),
       (Route<dynamic> route) => false,
     );
+  } catch (e) {
+    // Fecha o diálogo de carregamento em caso de erro
+    Navigator.of(context, rootNavigator: true).pop();
+    utils.dialogPadraoCpl(
+      context,
+      titulo: 'Erro',
+      conteudo: 'Ocorreu um erro ao salvar a foto: $e',
+      textoSim: 'Ok',
+      acaoSim: () {},
+      textoNao: '',
+      acaoNao: () {},
+    );
   }
-
-// Tenta enviar a foto para a API
-
+}
 //Acho que tem que ser aqui o _buildResultadoCalculos, mas não sei onde
 @override
 Widget build(BuildContext context) {

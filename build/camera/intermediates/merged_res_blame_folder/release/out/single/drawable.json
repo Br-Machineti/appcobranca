@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\camera\\intermediates\\merged_res\\release\\drawable\\notification_bg_low.xml",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\e1a97b3691e439eefc03bbea4da6ab2f\\transformed\\core-1.6.0\\res\\drawable\\notification_bg_low.xml"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\camera\\intermediates\\merged_res\\release\\drawable\\notification_icon_background.xml",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\e1a97b3691e439eefc03bbea4da6ab2f\\transformed\\core-1.6.0\\res\\drawable\\notification_icon_background.xml"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\camera\\intermediates\\merged_res\\release\\drawable\\notification_tile_bg.xml",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\e1a97b3691e439eefc03bbea4da6ab2f\\transformed\\core-1.6.0\\res\\drawable\\notification_tile_bg.xml"
+    },
+    {
+        "merged": "C:\\flutter\\examples\\appfoto\\droid_foto\\droid_fotobase2\\build\\camera\\intermediates\\merged_res\\release\\drawable\\notification_bg.xml",
+        "source": "C:\\Users\\Lukas\\.gradle\\caches\\transforms-3\\e1a97b3691e439eefc03bbea4da6ab2f\\transformed\\core-1.6.0\\res\\drawable\\notification_bg.xml"
+    }
+]
