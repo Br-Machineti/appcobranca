@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 class MaquinaModel {
   final int numero;
   final int relogio1atual;
+  final String cliente;
   final int relogio2atual;
   final int relogiosaidaatual;
   final double valorjogada;
@@ -11,6 +12,7 @@ class MaquinaModel {
 
   MaquinaModel({
     required this.numero,
+    required this.cliente,
     required this.relogio1atual,
     required this.relogio2atual,
     required this.relogiosaidaatual,
@@ -22,9 +24,11 @@ class MaquinaModel {
   factory MaquinaModel.fromJson(Map<String, dynamic> json) {
     return MaquinaModel(
       numero: int.tryParse(json['numero'].toString()) ?? 0,
+      cliente: json['cliente'] ?? '',
       relogio1atual: int.tryParse(json['relogio1atual'].toString()) ?? 0,
       relogio2atual: int.tryParse(json['relogio2atual'].toString()) ?? 0,
-      relogiosaidaatual: int.tryParse(json['relogiosaidaatual'].toString()) ?? 0,
+      relogiosaidaatual:
+          int.tryParse(json['relogiosaidaatual'].toString()) ?? 0,
       valorjogada: double.tryParse(json['valorjogada'].toString()) ?? 0.0,
       mensagem: json['mensagem'] ?? '',
       valorpelucia: double.tryParse(json['valorpelucia'].toString()) ?? 0.0,
@@ -34,6 +38,7 @@ class MaquinaModel {
   Map<String, dynamic> toMap() {
     return {
       'numero': numero,
+      'cliente': cliente,
       'relogio1atual': relogio1atual,
       'relogio2atual': relogio2atual,
       'relogiosaidaatual': relogiosaidaatual,

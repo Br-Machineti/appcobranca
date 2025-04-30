@@ -42,9 +42,11 @@ Future<Database> getDb() async {
             enviado INTEGER
         )''',
       );
+      //Adicionar o campo cliente.
       await db.execute(
         '''CREATE TABLE IF NOT EXISTS maquina(
             numero INTEGER PRIMARY KEY,
+            cliente TEXT,
             relogio1atual INTEGER,
             relogio2atual INTEGER,
             relogiosaidaatual INTEGER,
@@ -54,7 +56,15 @@ Future<Database> getDb() async {
         )''',
       );
     },
-    version: 2,
+    version: 3,
+
+    // Alterar a tabela existente para adicionar o campo cliente
+    // e garantir que o banco de dados seja atualizado corretamente.
+    onUpgrade: (db, oldVersion, newVersion) async {
+      if (oldVersion < 3) {
+        await db.execute('ALTER TABLE maquina ADD COLUMN cliente TEXT');
+      }
+    },
   );
   return await database;
 }
